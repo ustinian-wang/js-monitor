@@ -49,6 +49,7 @@ function isFunction(fn: any) {
     return typeof fn === 'function';
 }
 
+
 function setupVue(config: setupConfigDef) {
     console_log('setupVue start', config);
     let Vue = window.Vue;
