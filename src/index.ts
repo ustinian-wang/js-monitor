@@ -49,7 +49,6 @@ function isFunction(fn: any) {
     return typeof fn === 'function';
 }
 
-
 function setupVue(config: setupConfigDef) {
     console_log('setupVue start', config);
     let Vue = window.Vue;
@@ -116,18 +115,18 @@ function setupWin(config: setupConfigDef) {
         'error',
         function (event: Event) {
             config.error?.(event);
-        const target = event.target as HTMLElement;
-        if (
-            target &&
-            (target.tagName === 'IMG' ||
-            target.tagName === 'SCRIPT' ||
-            target.tagName === 'LINK')
-        ) {
-            report(config, {
-            type: 'resource-error',
-            tagName: target.tagName,
-            src: (target as any).src || (target as any).href,
-            });
+            const target = event.target as HTMLElement;
+            let tagName = target?.tagName?.toLowerCase();
+            let tagList = ['img', 'script', 'link'];
+            if (
+                target &&
+                tagList.includes(tagName)
+            ) {
+                report(config, {
+                    type: 'resource-error',
+                    tagName,
+                    src: (target as any).src || (target as any).href,
+                });
             }
         },
         true // 必须捕获阶段

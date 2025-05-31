@@ -4,7 +4,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: 'src/index.ts',
-      name: 'index',
+      name: 'JsMonitor',
       fileName: (format) => `index.${format}.js`
     },
     rollupOptions: {
