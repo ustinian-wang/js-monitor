@@ -5,12 +5,18 @@ declare global {
 }
 
 type setupConfigDef = {
-    force?: boolean, // 是否强制安装
+    force?: boolean, // 是否强制安装, 默认false，setup默认只能执行一次，重复setup的话，也只执行一次，但如果设置fouce为true，则每次setup都会重新初始化
     appId?: string, // 应用ID
     api?: string | Function, // 上报地址
     debug?: boolean, // 是否为调试模式
     filter?: (data: reportDataDef) => boolean, // 过滤函数
     transform?: (data: reportDataDef) => reportDataDef | object, // 转换函数
+    warnHandler?: (error: Error, vm: any, info: string) => void, // Vue.config.warnHandler 警告处理函数
+    errorHandler?: (error: Error, vm: any, info: string) => void, // Vue.config.errorHandler 错误处理函数
+    unhandledrejection?: (event: PromiseRejectionEvent) => void, // window.unhandledrejection 未捕获异常处理函数
+    onerror?: (message: string, source: string, lineno: number, colno: number, error: Error) => void, // window.onerror 错误处理函数
+    error?: (event: Event) => void, // window.addEventListener('error', config.error) 资源加载错误处理函数
+    report?: (config: setupConfigDef, data: reportDataDef) => void, // 上报回调
 }
 
 type reportDataDef = {
@@ -49,6 +55,7 @@ function setupVue(config: setupConfigDef) {
     if(Vue) {
         console_log('vue proxy warn handler start');
         Vue.config.warnHandler = after(Vue.config.warnHandler, (error: Error, vm: any, info: string)=>{
+            config.warnHandler?.(error, vm, info);
             report(config, {
                 type: 'vue-warn',
                 error,
@@ -59,6 +66,7 @@ function setupVue(config: setupConfigDef) {
         console_log('vue proxy warn handler end');
         console_log('vue proxy error handler start');
         Vue.config.errorHandler = after(Vue.config.errorHandler, (error: Error, vm: any, info: string)=>{
+            config.errorHandler?.(error, vm, info);
             report(config, {
                 type: 'vue-error',
                 error,
@@ -76,6 +84,7 @@ function setupWin(config: setupConfigDef) {
     console_log('setupWin onerror start');
     // 捕获全局 JS 错误
     window.onerror = after(window.onerror, function(message: string, source: string, lineno: number, colno: number, error: Error) {
+        config.onerror?.(message, source, lineno, colno, error);
         report(config, {
             type: 'onerror',
             message,
@@ -90,6 +99,7 @@ function setupWin(config: setupConfigDef) {
     console_log('setupWin unhandledrejection start');
     // 捕获 Promise 未捕获异常
     window.addEventListener('unhandledrejection', function (event) {
+        config.unhandledrejection?.(event);
         report(config, {
         type: 'unhandledrejection',
         reason: event.reason,
@@ -104,6 +114,7 @@ function setupWin(config: setupConfigDef) {
     window.addEventListener(
         'error',
         function (event: Event) {
+            config.error?.(event);
         const target = event.target as HTMLElement;
         if (
             target &&
@@ -138,28 +149,26 @@ function console_log(...args: any[]) {
 
 let is_setup = false;
 export function setup(config: setupConfigDef) {
+    console_log('setup launch start');
     if(!config.force) {
         if(is_setup) {
-            console_log('setup already setup', config);
+            console_log('setup already launch', config);
             return;
         }
         is_setup = true;
     }
-
-
-    console_log('setup start', config);
     config = assignConfig(config);
     is_debug = config.debug || false;
-    window.addEventListener('DOMContentLoaded', () => {
-        setupVue(config);
-        setupWin(config);
-    });
-    console_log('setup end', config);
+    console_log('setup start');
+    setupVue(config);
+    setupWin(config);
+    console_log('setup end');
+    console_log('setup launch end');
 }
-
 
 // 上报函数
 export function report(config: setupConfigDef, data: reportDataDef) {
+    config.report?.(config, data);
     console_log('report start');
     config = assignConfig(config);
 
