@@ -2,13 +2,6 @@ import './style.css'
 import typescriptLogo from './typescript.svg'
 import viteLogo from '/vite.svg'
 import { setupCounter } from './counter.ts'
-import { setup } from './index'
-
-setup({
-  appId: 'monitor-demo',
-  api: 'http://localhost:3000/api/monitor',
-  debug: true
-})
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>

@@ -16,6 +16,37 @@ npm install @ustinian-wang/js-monitor@latest
 
 ### 1. 引入并初始化
 
+> umd
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@ustinian-wang/js-monitor@latest">
+window.addEventListener('DOMContentLoaded', (e) => {
+    console.log('DOMContentLoaded', e);
+    const JsMonitor = window.JsMonitor;
+    JsMonitor.setup({
+        appId: 'monitor-demo',
+        api: 'http://localhost:3000/api/monitor',
+        debug: true
+    });
+});
+</script>
+```
+
+> esm
+
+```ts
+import { setup } from 'js-monitor';
+
+setup({
+  appId: 'your-app-id',
+  api: '/api/report', // 或自定义函数
+  debug: true,
+  filter: (data) => false, // 返回 true 则不上报
+  transform: (data) => data, // 可自定义数据转换
+});
+```
+
+
 ```ts
 import { setup } from 'js-monitor';
 
@@ -77,6 +108,10 @@ data（reportDataDef）常用字段
 | tagName | string | 资源标签名 |
 | src | string | 资源地址 |
 
+
+## 在线用例
+
+<https://stackblitz.com/edit/stackblitz-starters-ofnzdvcm?embed=1&file=index.html>
 
 ## 功能特性
 

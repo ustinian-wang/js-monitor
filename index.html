@@ -9,5 +9,16 @@
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
+    <script src="/dist/index.umd.js">
+      window.addEventListener('DOMContentLoaded', (e) => {
+        console.log('DOMContentLoaded', e);
+        const JsMonitor = window.JsMonitor;
+        JsMonitor.setup({
+          appId: 'monitor-demo',
+          api: 'http://localhost:3000/api/monitor',
+          debug: true
+        });
+      });
+    </script>
   </body>
 </html>
