@@ -1,9 +1,15 @@
+# 前端异常监控
+
+## 背景介绍
+
+- 为了完善项目质量, 我们需要对异常进行监控, 基于此背景开发一个异常监控sdk捕获错误
+
 ## 安装
 
 ```bash
-yarn install
+yarn install @ustinian-wang/js-monitor@latest
 # 或
-npm install
+npm install @ustinian-wang/js-monitor@latest
 ```
 
 ## 使用
@@ -22,6 +28,14 @@ setup({
 });
 ```
 
+| 参数名 | 类型 | 必填 | 说明 |
+| --------- | -------------------------- | ---- | -------------------------------------------------------------------- |
+| appId | string | 是 | 应用唯一标识 |
+| api | string \| Function | 是 | 上报地址（字符串）或自定义上报函数 |
+| debug | boolean | 否 | 是否开启调试模式（开启后会打印调试日志） |
+| filter | (data) => boolean | 是 | 过滤函数，返回 true 时本次数据不上报 |
+| transform | (data) => object | 是 | 数据转换函数，上报前可对数据进行自定义处理 |
+
 ### 2. 手动上报
 
 ```ts
@@ -37,6 +51,32 @@ report({
   message: '自定义上报内容'
 });
 ```
+
+| 参数名 | 类型 | 必填 | 说明 |
+| ------ | ---------------------- | ---- | ---------------------------- |
+| config | setupConfigDef | 是 | 同 setup 的配置参数 |
+| data | reportDataDef | 是 | 需要上报的数据对象 |
+
+data（reportDataDef）常用字段
+| 字段名 | 类型 | 说明 |
+| --------- | --------- | ---------------------- |
+| appId | string | 应用ID |
+| type | string | 错误/事件类型 |
+| error | Error | 错误对象 |
+| vmName | string | Vue 组件名 |
+| info | string | 额外信息 |
+| message | string | 错误消息 |
+| stack | string | 错误堆栈 |
+| url | string | 当前页面地址 |
+| time | number | 上报时间戳 |
+| userAgent | string | UA 信息 |
+| source | string | 错误来源 |
+| lineno | number | 行号 |
+| colno | number | 列号 |
+| reason | any | Promise 拒绝原因 |
+| tagName | string | 资源标签名 |
+| src | string | 资源地址 |
+
 
 ## 功能特性
 
