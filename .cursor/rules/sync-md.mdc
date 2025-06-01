@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+- 请根据 [index.ts](mdc:src/index.ts) 的内容，同步更新 [README.md](mdc:README.md)
