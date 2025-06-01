@@ -8,7 +8,7 @@ jest.mock('@ustinian-wang/kit', () => ({
   isFunction: jest.fn((fn) => typeof fn === 'function')
 }));
 
-import { setup, report, callUnhandledrejection } from '../src/index';
+import { setup, report, callUnhandledrejection, ErrTypeEnum, reportDataDef } from '../src/index';
 
 describe('js-monitor', () => {
   let originalFetch: any;
@@ -110,7 +110,7 @@ describe('js-monitor', () => {
       filter: () => false,
       transform: (data: any) => data,
     };
-    const data = { type: 'test' };
+    const data = { type: ErrTypeEnum.TEST };
     report(config, data);
     expect(apiFn).toHaveBeenCalledWith(expect.objectContaining({ appId: 'test-app', type: 'test' }));
   });
@@ -122,7 +122,7 @@ describe('js-monitor', () => {
       api: apiFn,
       filter: () => true,
     };
-    const data = { type: 'test' };
+    const data: reportDataDef = { type: ErrTypeEnum.TEST };
     report(config, data);
     expect(apiFn).not.toHaveBeenCalled();
   });
@@ -134,7 +134,7 @@ describe('js-monitor', () => {
       api: apiFn,
       filter: () => false,
     };
-    const data = { type: 'test' };
+    const data: reportDataDef = { type: ErrTypeEnum.TEST };
     report(config, data);
     expect(apiFn).toHaveBeenCalledWith(expect.objectContaining({ appId: 'test-app', type: 'test' }));
   });
@@ -146,12 +146,13 @@ describe('js-monitor', () => {
       api: apiFn,
       filter: () => true,
     };
-    report(config, { type: 'test' });
+    const data: reportDataDef = { type: ErrTypeEnum.TEST };
+    report(config, data);
     expect(apiFn).not.toHaveBeenCalled();
   });
 
   it('config.transform should be called', () => {
-    const data = { type: 'test' };
+    const data: reportDataDef = { type: ErrTypeEnum.TEST };
     const transformData = {
       test: true
     }

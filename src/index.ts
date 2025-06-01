@@ -1,3 +1,18 @@
+
+/**
+ * 错误类型枚举
+ */
+export const ErrTypeEnum = {
+    VUE_WARN: 'vue-warn',
+    VUE_ERROR: 'vue-error',
+    UNHANDLEDREJECTION: 'unhandledrejection',
+    ONERROR: 'onerror',
+    RESOURCE_ERROR: 'resource-error',
+    TEST: "test", // 测试类型
+} as const;
+
+export type ErrTypeEnum = typeof ErrTypeEnum[keyof typeof ErrTypeEnum];
+
 /**
  * 导入工具函数
  */
@@ -17,26 +32,26 @@ declare global {
  * 配置项类型定义
  */
 type setupConfigDef = {
-    force?: boolean, // 是否强制安装, 默认false，setup默认只能执行一次，重复setup的话，也只执行一次，但如果设置fouce为true，则每次setup都会重新初始化
-    appId?: string, // 应用ID
-    api?: string | Function, // 上报地址
+    force?: boolean, // 默认false，setup重复调用，只会初始化一次。设置为true时，每次setup都会重新初始化
+    appId?: string, // 应用ID，方便识别配置的环境
+    api?: string | Function, // 上报地址，可以是字符串，也可以是函数
     debug?: boolean, // 是否为调试模式
-    filter?: (data: reportDataDef) => boolean, // 过滤函数
-    transform?: (data: reportDataDef) => reportDataDef | object, // 转换函数
-    warnHandler?: (error: Error, vm: any, info: string) => void, // Vue.config.warnHandler 警告处理函数
-    errorHandler?: (error: Error, vm: any, info: string) => void, // Vue.config.errorHandler 错误处理函数
-    unhandledrejection?: (event: PromiseRejectionEvent) => void, // window.unhandledrejection 未捕获异常处理函数
-    onerror?: (message: string, source: string, lineno: number, colno: number, error: Error) => void, // window.onerror 错误处理函数
-    error?: (event: Event) => void, // window.addEventListener('error', config.error) 资源加载错误处理函数
-    report?: (config: setupConfigDef, data: reportDataDef) => void, // 上报回调
+    filter?: (data: reportDataDef) => boolean, // 过滤函数，可以过滤掉一些不必要上报行为
+    transform?: (data: reportDataDef) => reportDataDef | object, // 转换函数，可以将数据转成需要的格式，传递给api
+    warnHandler?: (error: Error, vm: any, info: string) => void, // Vue.config.warnHandler 警告处理回调
+    errorHandler?: (error: Error, vm: any, info: string) => void, // Vue.config.errorHandler 错误处理回调
+    unhandledrejection?: (event: PromiseRejectionEvent) => void, // window.unhandledrejection 未捕获异常处理回调
+    onerror?: (message: string, source: string, lineno: number, colno: number, error: Error) => void, // window.onerror 错误处理回调
+    error?: (event: Event) => void, // window.addEventListener('error', config.error) 资源加载错误处理回调
+    report?: (config: setupConfigDef, data: reportDataDef) => void, // 上报回调，它在api调用前被执行，做一些预处理逻辑
 }
 
 /**
  * 上报数据类型定义
  */
-type reportDataDef = {
+export type reportDataDef = {
     appId?: string, // 应用ID
-    type?: string, // 类型
+    type?: ErrTypeEnum, // 错误类型 
     error?: Error, // 错误
     vmName?: string, // 组件名称
     info?: string, // 信息
@@ -64,7 +79,7 @@ type reportDataDef = {
 export function callWarnHandler(config: setupConfigDef, error: Error, vm: any, info: string){
     config.warnHandler?.(error, vm, info);
     report(config, {
-        type: 'vue-warn',
+        type: ErrTypeEnum.VUE_WARN,
         error,
         vmName: vm?.$options?.name,
         info
@@ -81,7 +96,7 @@ export function callWarnHandler(config: setupConfigDef, error: Error, vm: any, i
 export function callErrorHandler(config: setupConfigDef, error: Error, vm: any, info: string){
     config.errorHandler?.(error, vm, info);
     report(config, {
-        type: 'vue-error',
+        type: ErrTypeEnum.VUE_ERROR,
         error,
         vmName: vm?.$options?.name,
         info
@@ -101,7 +116,7 @@ export function callUnhandledrejection(config: setupConfigDef, event: PromiseRej
         resConfig = JSON.stringify(reason.response.config);
     }
     report(config, {
-        type: 'unhandledrejection',
+        type: ErrTypeEnum.UNHANDLEDREJECTION,
         reason: event.reason,
         stack: event.reason?.stack,
         error: event.reason,
@@ -157,7 +172,7 @@ export const callError = (config: setupConfigDef, event: Event)=>{
         tagList.includes(tagName)
     ) {
         report(config, {
-            type: 'resource-error',
+            type: ErrTypeEnum.RESOURCE_ERROR,
             tagName,
             src: (target as any).src || (target as any).href,
         });
@@ -174,7 +189,7 @@ function setupWin(config: setupConfigDef) {
     let onerror = function(message: string, source: string, lineno: number, colno: number, error: Error) {
         config.onerror?.(message, source, lineno, colno, error);
         report(config, {
-            type: 'onerror',
+            type: ErrTypeEnum.ONERROR,
             message,
             source,
             lineno,
