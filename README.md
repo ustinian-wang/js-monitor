@@ -61,11 +61,18 @@ setup({
 
 | 参数名 | 类型 | 必填 | 说明 |
 | --------- | -------------------------- | ---- | -------------------------------------------------------------------- |
+| force | boolean | 否 | 是否强制安装，默认false。setup默认只能执行一次，重复setup只执行一次，但force为true时每次setup都会重新初始化 |
 | appId | string | 是 | 应用唯一标识 |
 | api | string \| Function | 是 | 上报地址（字符串）或自定义上报函数 |
 | debug | boolean | 否 | 是否开启调试模式（开启后会打印调试日志） |
-| filter | (data) => boolean | 是 | 过滤函数，返回 true 时本次数据不上报 |
-| transform | (data) => object | 是 | 数据转换函数，上报前可对数据进行自定义处理 |
+| filter | (data) => boolean | 否 | 过滤函数，返回 true 时本次数据不上报 |
+| transform | (data) => object | 否 | 数据转换函数，上报前可对数据进行自定义处理 |
+| warnHandler | (error, vm, info) => void | 否 | Vue.config.warnHandler 警告处理函数 |
+| errorHandler | (error, vm, info) => void | 否 | Vue.config.errorHandler 错误处理函数 |
+| unhandledrejection | (event) => void | 否 | window.unhandledrejection 未捕获异常处理函数 |
+| onerror | (message, source, lineno, colno, error) => void | 否 | window.onerror 错误处理函数 |
+| error | (event) => void | 否 | window.addEventListener('error', config.error) 资源加载错误处理函数 |
+| report | (config, data) => void | 否 | 上报回调 |
 
 ### 2. 手动上报
 
@@ -107,7 +114,18 @@ data（reportDataDef）常用字段
 | reason | any | Promise 拒绝原因 |
 | tagName | string | 资源标签名 |
 | src | string | 资源地址 |
+| resConfig | string | 请求配置，Promise reject 时，可能是 axios 的请求配置 |
 
+## API 扩展
+
+除了 `setup` 和 `report`，还暴露了以下辅助函数，便于自定义集成：
+
+- `callWarnHandler(config, error, vm, info)`：手动触发 Vue 警告处理和上报。
+- `callErrorHandler(config, error, vm, info)`：手动触发 Vue 错误处理和上报。
+- `callUnhandledrejection(config, event)`：手动处理 Promise 未捕获异常并上报。
+- `callError(config, event)`：手动处理资源加载错误并上报。
+
+这些函数可用于更细粒度的错误监控或自定义场景。
 
 ## 在线用例
 
