@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig({
   build: {
@@ -8,6 +9,7 @@ export default defineConfig({
       fileName: (format) => `index.${format}.js`
     },
     rollupOptions: {
+      plugins: [visualizer()],
       // 外部依赖不打包进库
       external: [],
       output: {
