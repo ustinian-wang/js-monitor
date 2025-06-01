@@ -1,3 +1,13 @@
+jest.mock('@ustinian-wang/kit', () => ({
+  after: jest.fn(function(origin, fn){
+    return function(...args: any[]){
+      origin(...args);
+      fn(...args);
+    }
+  }),
+  isFunction: jest.fn((fn) => typeof fn === 'function')
+}));
+
 import { setup, report } from '../src/index';
 
 describe('js-monitor', () => {
