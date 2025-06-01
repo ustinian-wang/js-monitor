@@ -1,3 +1,5 @@
+// @ts-ignore
+import { after, isFunction } from '@ustinian-wang/kit';
 declare global {
     interface Window {
         Vue?: any;
@@ -38,23 +40,13 @@ type reportDataDef = {
     src?: string, // 出错的静态资源地址
 }
 
-function after<T extends (...args: any[]) => any>(origin: T | undefined | null, fn: T): T {
-    return function (this: any, ...args: any[]) {
-        origin?.apply(this, args);
-        fn?.apply(this, args);
-    } as T;
-}
-
-function isFunction(fn: any) {
-    return typeof fn === 'function';
-}
 
 function setupVue(config: setupConfigDef) {
     console_log('setupVue start', config);
     let Vue = window.Vue;
     if(Vue) {
         console_log('vue proxy warn handler start');
-        Vue.config.warnHandler = after(Vue.config.warnHandler, (error: Error, vm: any, info: string)=>{
+        let warnHandler = (error: Error, vm: any, info: string)=>{
             config.warnHandler?.(error, vm, info);
             report(config, {
                 type: 'vue-warn',
@@ -62,10 +54,15 @@ function setupVue(config: setupConfigDef) {
                 vmName: vm?.$options?.name,
                 info
             })
-        });
+        };
+        if(Vue.config.warnHandler){
+            Vue.config.warnHandler = after(Vue.config.warnHandler, warnHandler);
+        }else{
+            Vue.config.warnHandler = warnHandler;
+        }
         console_log('vue proxy warn handler end');
         console_log('vue proxy error handler start');
-        Vue.config.errorHandler = after(Vue.config.errorHandler, (error: Error, vm: any, info: string)=>{
+        let errorHandler = (error: Error, vm: any, info: string)=>{
             config.errorHandler?.(error, vm, info);
             report(config, {
                 type: 'vue-error',
@@ -73,7 +70,12 @@ function setupVue(config: setupConfigDef) {
                 vmName: vm?.$options?.name,
                 info
             })
-        });
+        };
+        if(Vue.config.errorHandler){
+            Vue.config.errorHandler = after(Vue.config.errorHandler, errorHandler);
+        }else{
+            Vue.config.errorHandler = errorHandler;
+        }
         console_log('vue proxy error handler end');
     }
     console_log('setupVue end', config);
@@ -82,8 +84,7 @@ function setupVue(config: setupConfigDef) {
 function setupWin(config: setupConfigDef) {
     console_log('setupWin start');
     console_log('setupWin onerror start');
-    // 捕获全局 JS 错误
-    window.onerror = after(window.onerror, function(message: string, source: string, lineno: number, colno: number, error: Error) {
+    let onerror = function(message: string, source: string, lineno: number, colno: number, error: Error) {
         config.onerror?.(message, source, lineno, colno, error);
         report(config, {
             type: 'onerror',
@@ -94,7 +95,13 @@ function setupWin(config: setupConfigDef) {
             stack: error?.stack,
             error,
         });
-    }) as OnErrorEventHandler;
+    } as OnErrorEventHandler;
+    // 捕获全局 JS 错误
+    if(window.onerror){
+        window.onerror = after(window.onerror, onerror) as OnErrorEventHandler;
+    }else{
+        window.onerror = onerror;
+    }
     console_log('setupWin onerror end');
     console_log('setupWin unhandledrejection start');
     // 捕获 Promise 未捕获异常
