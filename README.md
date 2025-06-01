@@ -46,19 +46,6 @@ setup({
 });
 ```
 
-
-```ts
-import { setup } from 'js-monitor';
-
-setup({
-  appId: 'your-app-id',
-  api: '/api/report', // 或自定义函数
-  debug: true,
-  filter: (data) => false, // 返回 true 则不上报
-  transform: (data) => data, // 可自定义数据转换
-});
-```
-
 | 参数名 | 类型 | 必填 | 说明 |
 | --------- | -------------------------- | ---- | -------------------------------------------------------------------- |
 | force | boolean | 否 | 是否强制安装，默认false。setup默认只能执行一次，重复setup只执行一次，但force为true时每次setup都会重新初始化 |
@@ -129,4 +116,72 @@ data（reportDataDef）常用字段
 
 ## API 扩展
 
-除了 `setup` 和 `
+除了 `setup` 和 `report`，还暴露了以下辅助函数，便于自定义集成：
+
+- `callWarnHandler(config, error, vm, info)`：手动触发 Vue 警告处理和上报。
+- `callErrorHandler(config, error, vm, info)`：手动触发 Vue 错误处理和上报。
+- `callUnhandledrejection(config, event)`：手动处理 Promise 未捕获异常并上报。
+- `callError(config, event)`：手动处理资源加载错误并上报。
+
+这些函数可用于更细粒度的错误监控或自定义场景。
+
+## 在线用例
+
+<https://stackblitz.com/edit/stackblitz-starters-ofnzdvcm?embed=1&file=index.html>
+
+## 功能特性
+
+- **Vue 错误与警告监控**：自动代理 Vue 的 `errorHandler` 和 `warnHandler`。
+- **全局 JS 错误监控**：自动监听 `window.onerror`。
+- **Promise 未捕获异常监控**：自动监听 `unhandledrejection`。
+- **静态资源加载错误监控**：自动监听 `error` 事件，捕获图片、脚本、样式等资源加载失败。
+- **可配置过滤与转换**：支持自定义过滤和数据转换逻辑。
+- **支持自定义上报函数**：可通过 `api` 传入自定义上报方法。
+
+## 测试
+
+本项目使用 [Jest](https://jestjs.io/) 进行单元测试。
+
+### 运行测试
+
+```bash
+yarn test
+# 或
+npm test
+```
+
+### 测试文件示例
+
+测试文件位于 `__tests__/` 目录下，覆盖了 `setup` 和 `report` 的主要逻辑。
+
+## 开发
+
+### 本地开发
+
+```bash
+yarn dev
+```
+
+### 构建
+
+```bash
+yarn build
+```
+
+## 依赖
+
+- [TypeScript](https://www.typescriptlang.org/)
+- [Vite](https://vitejs.dev/)
+- [Jest](https://jestjs.io/)
+- [ts-jest](https://kulshekhar.github.io/ts-jest/)
+
+## 贡献
+
+欢迎提 issue 或 PR！
+
+---
+
+## License
+
+MIT
+
