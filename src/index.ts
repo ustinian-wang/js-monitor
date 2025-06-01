@@ -1,11 +1,21 @@
+/**
+ * 导入工具函数
+ */
 // @ts-ignore
 import { after, isFunction } from '@ustinian-wang/kit';
+
+/**
+ * 全局声明Vue类型
+ */
 declare global {
     interface Window {
         Vue?: any;
     }
 }
 
+/**
+ * 配置项类型定义
+ */
 type setupConfigDef = {
     force?: boolean, // 是否强制安装, 默认false，setup默认只能执行一次，重复setup的话，也只执行一次，但如果设置fouce为true，则每次setup都会重新初始化
     appId?: string, // 应用ID
@@ -21,6 +31,9 @@ type setupConfigDef = {
     report?: (config: setupConfigDef, data: reportDataDef) => void, // 上报回调
 }
 
+/**
+ * 上报数据类型定义
+ */
 type reportDataDef = {
     appId?: string, // 应用ID
     type?: string, // 类型
@@ -38,22 +51,76 @@ type reportDataDef = {
     reason?: any, // 原因
     tagName?: string, // 标签名称
     src?: string, // 出错的静态资源地址
+    resConfig?: string, // 请求配置, promise reject的时候,可能是来子axios的请求
 }
 
+/**
+ * 处理Vue警告
+ * @param config 配置项
+ * @param error 错误对象
+ * @param vm Vue实例
+ * @param info 警告信息
+ */
+export function callWarnHandler(config: setupConfigDef, error: Error, vm: any, info: string){
+    config.warnHandler?.(error, vm, info);
+    report(config, {
+        type: 'vue-warn',
+        error,
+        vmName: vm?.$options?.name,
+        info
+    })
+}
 
+/**
+ * 处理Vue错误
+ * @param config 配置项
+ * @param error 错误对象
+ * @param vm Vue实例
+ * @param info 错误信息
+ */
+export function callErrorHandler(config: setupConfigDef, error: Error, vm: any, info: string){
+    config.errorHandler?.(error, vm, info);
+    report(config, {
+        type: 'vue-error',
+        error,
+        vmName: vm?.$options?.name,
+        info
+    })
+}
+
+/**
+ * 处理未捕获的Promise异常
+ * @param config 配置项
+ * @param event Promise异常事件
+ */
+export function callUnhandledrejection(config: setupConfigDef, event: PromiseRejectionEvent){
+    config.unhandledrejection?.(event);
+    let reason = event.reason;
+    let resConfig = "";
+    if(reason?.response?.config){
+        resConfig = JSON.stringify(reason.response.config);
+    }
+    report(config, {
+        type: 'unhandledrejection',
+        reason: event.reason,
+        stack: event.reason?.stack,
+        error: event.reason,
+        message: event.reason?.message,
+        resConfig,
+    });
+}
+
+/**
+ * 设置Vue错误处理
+ * @param config 配置项
+ */
 function setupVue(config: setupConfigDef) {
     console_log('setupVue start', config);
     let Vue = window.Vue;
     if(Vue) {
         console_log('vue proxy warn handler start');
         let warnHandler = (error: Error, vm: any, info: string)=>{
-            config.warnHandler?.(error, vm, info);
-            report(config, {
-                type: 'vue-warn',
-                error,
-                vmName: vm?.$options?.name,
-                info
-            })
+            callWarnHandler(config, error, vm, info);
         };
         if(Vue.config.warnHandler){
             Vue.config.warnHandler = after(Vue.config.warnHandler, warnHandler);
@@ -63,13 +130,7 @@ function setupVue(config: setupConfigDef) {
         console_log('vue proxy warn handler end');
         console_log('vue proxy error handler start');
         let errorHandler = (error: Error, vm: any, info: string)=>{
-            config.errorHandler?.(error, vm, info);
-            report(config, {
-                type: 'vue-error',
-                error,
-                vmName: vm?.$options?.name,
-                info
-            })
+            callErrorHandler(config, error, vm, info);
         };
         if(Vue.config.errorHandler){
             Vue.config.errorHandler = after(Vue.config.errorHandler, errorHandler);
@@ -81,6 +142,32 @@ function setupVue(config: setupConfigDef) {
     console_log('setupVue end', config);
 }
 
+/**
+ * 处理资源加载错误
+ * @param config 配置项
+ * @param event 错误事件
+ */
+export const callError = (config: setupConfigDef, event: Event)=>{
+    config.error?.(event);
+    const target = event.target as HTMLElement;
+    let tagName = target?.tagName?.toLowerCase();
+    let tagList = ['img', 'script', 'link'];
+    if (
+        target &&
+        tagList.includes(tagName)
+    ) {
+        report(config, {
+            type: 'resource-error',
+            tagName,
+            src: (target as any).src || (target as any).href,
+        });
+    }
+}
+
+/**
+ * 设置全局错误处理
+ * @param config 配置项
+ */
 function setupWin(config: setupConfigDef) {
     console_log('setupWin start');
     console_log('setupWin onerror start');
@@ -106,14 +193,7 @@ function setupWin(config: setupConfigDef) {
     console_log('setupWin unhandledrejection start');
     // 捕获 Promise 未捕获异常
     window.addEventListener('unhandledrejection', function (event) {
-        config.unhandledrejection?.(event);
-        report(config, {
-        type: 'unhandledrejection',
-        reason: event.reason,
-        stack: event.reason?.stack,
-        error: event.reason,
-            message: event.reason?.message,
-        });
+        callUnhandledrejection(config, event);
     });
     console_log('setupWin unhandledrejection end');
     console_log('setupWin error start');
@@ -121,26 +201,18 @@ function setupWin(config: setupConfigDef) {
     window.addEventListener(
         'error',
         function (event: Event) {
-            config.error?.(event);
-            const target = event.target as HTMLElement;
-            let tagName = target?.tagName?.toLowerCase();
-            let tagList = ['img', 'script', 'link'];
-            if (
-                target &&
-                tagList.includes(tagName)
-            ) {
-                report(config, {
-                    type: 'resource-error',
-                    tagName,
-                    src: (target as any).src || (target as any).href,
-                });
-            }
+            callError(config, event);
         },
         true // 必须捕获阶段
     );
     console_log('setupWin error end');
 }
 
+/**
+ * 合并配置项
+ * @param config 用户配置
+ * @returns 合并后的配置
+ */
 function assignConfig(config: setupConfigDef): setupConfigDef {
     let defaultConfig = {
     }
@@ -148,6 +220,10 @@ function assignConfig(config: setupConfigDef): setupConfigDef {
 }
 
 let is_debug = false;
+/**
+ * 调试日志
+ * @param args 日志参数
+ */
 function console_log(...args: any[]) {
     if(is_debug) {
         console.log(`[monitor] `, ...args);
@@ -155,6 +231,10 @@ function console_log(...args: any[]) {
 }
 
 let is_setup = false;
+/**
+ * 初始化监控
+ * @param config 配置项
+ */
 export function setup(config: setupConfigDef) {
     console_log('setup launch start');
     if(!config.force) {
@@ -173,7 +253,11 @@ export function setup(config: setupConfigDef) {
     console_log('setup launch end');
 }
 
-// 上报函数
+/**
+ * 上报错误信息
+ * @param config 配置项
+ * @param data 上报数据
+ */
 export function report(config: setupConfigDef, data: reportDataDef) {
     config.report?.(config, data);
     console_log('report start');

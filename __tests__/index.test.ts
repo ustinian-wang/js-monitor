@@ -8,7 +8,7 @@ jest.mock('@ustinian-wang/kit', () => ({
   isFunction: jest.fn((fn) => typeof fn === 'function')
 }));
 
-import { setup, report } from '../src/index';
+import { setup, report, callUnhandledrejection } from '../src/index';
 
 describe('js-monitor', () => {
   let originalFetch: any;
@@ -246,7 +246,7 @@ describe('js-monitor', () => {
     expect(window.onerror).toHaveBeenCalled();
   });
 
-  it.skip('report on window.onunhandledrejection', async() => {
+  it('report on window.onunhandledrejection', async() => {
     let apiFn = jest.fn(()=>{});
     let unhandledrejectionFn = jest.fn(()=>{});
     const config = {
@@ -258,8 +258,12 @@ describe('js-monitor', () => {
     };
     setup(config);
     
+    // @ts-ignore
+    callUnhandledrejection(config, {
+      reason: new Error('test'),
+    });
     // window.dispatchEvent(new Event("unhandledrejection"));
-    window.dispatchEvent(new Event('error'));
+    // window.dispatchEvent(new Event('error'));
 
     // 验证onunhandledrejection是否被调用
     expect(unhandledrejectionFn).toHaveBeenCalled();
@@ -288,4 +292,28 @@ describe('js-monitor', () => {
     window.Vue.config.errorHandler(new Error('test'));
     expect(apiFn).toHaveBeenCalled();
   });
+  it(`aixos on callUnhandledrejection`, ()=>{
+    let apiFn = jest.fn();
+    const config = {
+      appId: 'test-app',
+      api: apiFn,
+      force: true,
+    };
+    
+    // @ts-ignore
+    callUnhandledrejection(config, {
+      reason: {
+        response: {
+          config: {
+            url: 'https://www.baidu.com',
+          }
+        }
+      }
+    });
+    expect(apiFn).toHaveBeenCalledWith(expect.objectContaining({
+      resConfig: JSON.stringify({
+        url: 'https://www.baidu.com',
+      })
+    }));
+  })
 });
