@@ -33,17 +33,22 @@ declare global {
  */
 type setupConfigDef = {
     force?: boolean, // 默认false，setup重复调用，只会初始化一次。设置为true时，每次setup都会重新初始化
+    debug?: boolean, // 是否为调试模式
+    watch?: Array<ErrTypeEnum>, // 要监控的类型范围，一个数组，取值范围基于ErrTypeEnum
     appId?: string, // 应用ID，方便识别配置的环境
     api?: string | Function, // 上报地址，可以是字符串，也可以是函数
-    debug?: boolean, // 是否为调试模式
     filter?: (data: reportDataDef) => boolean, // 过滤函数，可以过滤掉一些不必要上报行为
     transform?: (data: reportDataDef) => reportDataDef | object, // 转换函数，可以将数据转成需要的格式，传递给api
-    warnHandler?: (error: Error, vm: any, info: string) => void, // Vue.config.warnHandler 警告处理回调
-    errorHandler?: (error: Error, vm: any, info: string) => void, // Vue.config.errorHandler 错误处理回调
+    warnHandler?: (error: Error, vm: any, info: string) => void, // vueConfig.warnHandler 警告处理回调
+    errorHandler?: (error: Error, vm: any, info: string) => void, // vueConfig.errorHandler 错误处理回调
     unhandledrejection?: (event: PromiseRejectionEvent) => void, // window.unhandledrejection 未捕获异常处理回调
     onerror?: (message: string, source: string, lineno: number, colno: number, error: Error) => void, // window.onerror 错误处理回调
     error?: (event: Event) => void, // window.addEventListener('error', config.error) 资源加载错误处理回调
     report?: (config: setupConfigDef, data: reportDataDef) => void, // 上报回调，它在api调用前被执行，做一些预处理逻辑
+    vueConfig?: {
+        errorHandler?: Function | null,
+        warnHandler?: Function | null
+    }
 }
 
 /**
@@ -124,38 +129,49 @@ export function callUnhandledrejection(config: setupConfigDef, event: PromiseRej
         resConfig,
     });
 }
-
 /**
- * 设置Vue错误处理
- * @param config 配置项
+ * @description
+ * @param {setupConfigDef} config 
+ * @returns {Array<getWatch>}
  */
-function setupVue(config: setupConfigDef) {
-    console_log('setupVue start', config);
-    let Vue = window.Vue;
-    if(Vue) {
+function getWatch(config: setupConfigDef){
+    let default_watch = Object.values(ErrTypeEnum);
+    return config.watch || default_watch;
+}
+
+function setup_vue_warnHandler(config: setupConfigDef){
+    let vueConfig = config.vueConfig;
+    if(vueConfig?.warnHandler){
         console_log('vue proxy warn handler start');
         let warnHandler = (error: Error, vm: any, info: string)=>{
             callWarnHandler(config, error, vm, info);
         };
-        if(Vue.config.warnHandler){
-            Vue.config.warnHandler = after(Vue.config.warnHandler, warnHandler);
+        if(vueConfig.warnHandler){
+            vueConfig.warnHandler = after(vueConfig.warnHandler, warnHandler);
         }else{
-            Vue.config.warnHandler = warnHandler;
+            vueConfig.warnHandler = warnHandler;
         }
         console_log('vue proxy warn handler end');
+    }
+
+}
+function setup_vue_errorHandler(config: setupConfigDef){
+    let vueConfig = config.vueConfig;
+    if(vueConfig?.errorHandler){
         console_log('vue proxy error handler start');
         let errorHandler = (error: Error, vm: any, info: string)=>{
             callErrorHandler(config, error, vm, info);
         };
-        if(Vue.config.errorHandler){
-            Vue.config.errorHandler = after(Vue.config.errorHandler, errorHandler);
+        if(vueConfig.errorHandler){
+            vueConfig.errorHandler = after(vueConfig.errorHandler, errorHandler);
         }else{
-            Vue.config.errorHandler = errorHandler;
+            vueConfig.errorHandler = errorHandler;
         }
         console_log('vue proxy error handler end');
     }
-    console_log('setupVue end', config);
+    
 }
+
 
 /**
  * 处理资源加载错误
@@ -179,12 +195,7 @@ export const callError = (config: setupConfigDef, event: Event)=>{
     }
 }
 
-/**
- * 设置全局错误处理
- * @param config 配置项
- */
-function setupWin(config: setupConfigDef) {
-    console_log('setupWin start');
+function setup_onerror(config: setupConfigDef){
     console_log('setupWin onerror start');
     let onerror = function(message: string, source: string, lineno: number, colno: number, error: Error) {
         config.onerror?.(message, source, lineno, colno, error);
@@ -205,12 +216,17 @@ function setupWin(config: setupConfigDef) {
         window.onerror = onerror;
     }
     console_log('setupWin onerror end');
+}
+function setup_unhandledrejection(config: setupConfigDef){
     console_log('setupWin unhandledrejection start');
     // 捕获 Promise 未捕获异常
     window.addEventListener('unhandledrejection', function (event) {
         callUnhandledrejection(config, event);
     });
     console_log('setupWin unhandledrejection end');
+}
+
+function setup_error(config: setupConfigDef){
     console_log('setupWin error start');
     // 捕获资源加载错误
     window.addEventListener(
@@ -222,7 +238,6 @@ function setupWin(config: setupConfigDef) {
     );
     console_log('setupWin error end');
 }
-
 /**
  * 合并配置项
  * @param config 用户配置
@@ -261,10 +276,29 @@ export function setup(config: setupConfigDef) {
     }
     config = assignConfig(config);
     is_debug = config.debug || false;
+
+    let watch = getWatch(config);
+
     console_log('setup start');
-    setupVue(config);
-    setupWin(config);
-    console_log('setup end');
+    if(watch.includes(ErrTypeEnum.VUE_WARN)){
+        setup_vue_warnHandler(config);
+    }
+    if(watch.includes(ErrTypeEnum.VUE_ERROR)){
+        setup_vue_errorHandler(config);
+    }
+
+    if(watch.includes(ErrTypeEnum.ONERROR)){
+        setup_onerror(config);
+    }
+
+    if(watch.includes(ErrTypeEnum.RESOURCE_ERROR)){
+        setup_error(config);
+    }
+
+    if(watch.includes(ErrTypeEnum.UNHANDLEDREJECTION)){
+        setup_unhandledrejection(config);
+    }
+
     console_log('setup launch end');
 }
 

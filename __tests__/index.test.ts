@@ -206,8 +206,17 @@ describe('js-monitor', () => {
   });
   it('config.warnHandler should be called', () => {
     const config_warnHandler_fn = jest.fn();
+    let vueConfig = {
+      warnHandler(error?: Error, vm?: Object, info?: Object){
+        console.log(error, vm, info);
+      },
+      errorHandler(error?: Error, vm?: Object, info?: Object){
+        console.log(error, vm, info);
+      },
+    }
     const config = {
       force: true,
+      vueConfig,
       appId: 'test-app',
       api: '/api/report',
       warnHandler: config_warnHandler_fn,
@@ -215,22 +224,32 @@ describe('js-monitor', () => {
     window.onerror = jest.fn();
 
     setup(config);
-    window.Vue.config.warnHandler(new Error('test'));
+    vueConfig.warnHandler(new Error('test'));
     expect(config_warnHandler_fn).toHaveBeenCalled();
     // expect(config_onerror_fn).toHaveBeenCalled();
   });
   it('config.errorHandler should be called', () => {
     const config_errorHandler_fn = jest.fn();
+    let vueConfig = {
+      warnHandler(error?: Error, vm?: Object, info?: Object){
+        console.log(error, vm, info);
+      },
+      errorHandler(error?: Error, vm?: Object, info?: Object){
+        console.log(error, vm, info);
+      },
+    }
     const config = {
       force: true,
+      debug: true,
       appId: 'test-app',
       api: '/api/report',
       errorHandler: config_errorHandler_fn,
+      vueConfig,
     };
     window.onerror = jest.fn();
 
     setup(config);
-    window.Vue.config.errorHandler(new Error('test'));
+    vueConfig.errorHandler(new Error('test'));
     expect(config_errorHandler_fn).toHaveBeenCalled();
     // expect(config_onerror_fn).toHaveBeenCalled();
   });
@@ -272,25 +291,44 @@ describe('js-monitor', () => {
 
   it('report on Vue.config.warnHandler  ', () => {
     const apiFn = jest.fn();
+    let vueConfig = {
+      warnHandler(error?: Error, vm?: Object, info?: Object){
+        console.log(error, vm, info);
+      },
+      errorHandler(error?: Error, vm?: Object, info?: Object){
+        console.log(error, vm, info);
+      },
+    }
     const config = {
       debug: true,
       force: true,
       appId: 'test-app',
       api: apiFn,
+      vueConfig
     };
     setup(config);
-    window.Vue.config.warnHandler(new Error('test'));
+    vueConfig.warnHandler(new Error('test'));
     expect(apiFn).toHaveBeenCalled();
   });
   it('report on Vue.config.errorHandler  ', () => {
+    
+    let vueConfig = {
+      warnHandler(error?: Error, vm?: Object, info?: Object){
+        console.log(error, vm, info);
+      },
+      errorHandler(error?: Error, vm?: Object, info?: Object){
+        console.log(error, vm, info);
+      },
+    }
     const apiFn = jest.fn();
     const config = {
       appId: 'test-app',
       api: apiFn,
       force: true,
+      vueConfig
     };
     setup(config);
-    window.Vue.config.errorHandler(new Error('test'));
+    vueConfig.errorHandler(new Error('test'));
     expect(apiFn).toHaveBeenCalled();
   });
   it(`aixos on callUnhandledrejection`, ()=>{
