@@ -1016,10 +1016,10 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@ustinian-wang/kit@^1.0.7":
-  version "1.0.7"
-  resolved "https://registry.yarnpkg.com/@ustinian-wang/kit/-/kit-1.0.7.tgz#3215c542837f39684646fc7d9180b347c439c39c"
-  integrity sha512-1VT0EG85ThzaICdlakgNCrTEggbcmPlH9LiHoDAyepj75sZpkapwG71E4aGSdrl1yJaIOo/ez8C5XUKbh6dT2w==
+"@ustinian-wang/kit@^1.0.9":
+  version "1.0.9"
+  resolved "https://registry.npmmirror.com/@ustinian-wang/kit/-/kit-1.0.9.tgz#51e26162efebb8c883df4ce3564da45c951eb634"
+  integrity sha512-B1icA/WCtFMgFxg5TuDrXKXLek5g0Ba/WJJsRXiRA1L5cRm7o3CWLvEsAgHmrzoxmkklCP4SZzVR5o9f068rYA==
   dependencies:
     axios "^1.7.2"
     axios-retry "^4.5.0"
