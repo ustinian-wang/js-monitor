@@ -357,6 +357,19 @@ describe('js-monitor', () => {
   })
 
   describe('callWarnHandler', () => {
+
+    beforeAll(()=>{
+      originalVue = window.Vue;
+      window.Vue = {
+        config: {
+          warnHandler: jest.fn()
+        },
+      };
+    })
+    afterAll(()=>{
+      window.Vue = originalVue;
+    })
+
     it('should call config.warnHandler and report with correct data', () => {
       const apiFn = jest.fn();
       const warnHandler = jest.fn();
@@ -374,6 +387,8 @@ describe('js-monitor', () => {
       expect(warnHandler).toHaveBeenCalledWith(error, vm, info);
       expect(apiFn).toHaveBeenCalledWith(expect.objectContaining({
         type: ErrTypeEnum.VUE_WARN,
+        message: error.message || '',
+        stack: error.stack || '',
         error,
         vmName: 'TestComponent',
         info,
