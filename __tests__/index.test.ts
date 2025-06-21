@@ -8,7 +8,7 @@ jest.mock('@ustinian-wang/kit', () => ({
   isFunction: jest.fn((fn) => typeof fn === 'function')
 }));
 
-import { setup, report, callUnhandledrejection, ErrTypeEnum, reportDataDef } from '../src/index';
+import { setup, report, callUnhandledrejection, ErrTypeEnum, reportDataDef, callWarnHandler, callErrorHandler, callError } from '../src/index';
 
 describe('js-monitor', () => {
   let originalFetch: any;
@@ -355,4 +355,114 @@ describe('js-monitor', () => {
       })
     }));
   })
+
+  describe('callWarnHandler', () => {
+    it('should call config.warnHandler and report with correct data', () => {
+      const apiFn = jest.fn();
+      const warnHandler = jest.fn();
+      const config = {
+        api: apiFn,
+        warnHandler,
+      };
+      const error = new Error('test warn');
+      const vm = { $options: { name: 'TestComponent' } };
+      const info = 'test info';
+
+      // @ts-ignore
+      callWarnHandler(config, error, vm, info);
+
+      expect(warnHandler).toHaveBeenCalledWith(error, vm, info);
+      expect(apiFn).toHaveBeenCalledWith(expect.objectContaining({
+        type: ErrTypeEnum.VUE_WARN,
+        error,
+        vmName: 'TestComponent',
+        info,
+      }));
+    });
+  });
+
+  describe('callErrorHandler', () => {
+    it('should call config.errorHandler and report with correct data', () => {
+      const apiFn = jest.fn();
+      const errorHandler = jest.fn();
+      const config = {
+        api: apiFn,
+        errorHandler,
+      };
+      const error = new Error('test error');
+      const vm = { $options: { name: 'ErrorComponent' } };
+      const info = 'error info';
+
+      // @ts-ignore
+      callErrorHandler(config, error, vm, info);
+
+      expect(errorHandler).toHaveBeenCalledWith(error, vm, info);
+      expect(apiFn).toHaveBeenCalledWith(expect.objectContaining({
+        type: ErrTypeEnum.VUE_ERROR,
+        error,
+        vmName: 'ErrorComponent',
+        info,
+      }));
+    });
+  });
+
+  describe('callError', () => {
+    it('should call config.error and report when target is a tracked resource', () => {
+      const apiFn = jest.fn();
+      const errorFn = jest.fn();
+      const config = {
+        api: apiFn,
+        error: errorFn,
+      };
+      const mockEvent = {
+        target: {
+          tagName: 'IMG',
+          src: 'https://example.com/image.png'
+        }
+      } as unknown as Event;
+
+      callError(config, mockEvent);
+
+      expect(errorFn).toHaveBeenCalledWith(mockEvent);
+      expect(apiFn).toHaveBeenCalledWith(expect.objectContaining({
+        type: ErrTypeEnum.RESOURCE_ERROR,
+        tagName: 'img',
+        src: 'https://example.com/image.png'
+      }));
+    });
+
+    it('should call config.error but not report when target is not a tracked resource', () => {
+      const apiFn = jest.fn();
+      const errorFn = jest.fn();
+      const config = {
+        api: apiFn,
+        error: errorFn,
+      };
+      const mockEvent = {
+        target: {
+          tagName: 'DIV',
+        }
+      } as unknown as Event;
+
+      callError(config, mockEvent);
+
+      expect(errorFn).toHaveBeenCalledWith(mockEvent);
+      expect(apiFn).not.toHaveBeenCalled();
+    });
+
+    it('should call config.error but not report when event target is null', () => {
+      const apiFn = jest.fn();
+      const errorFn = jest.fn();
+      const config = {
+        api: apiFn,
+        error: errorFn,
+      };
+      const mockEvent = new Event('error');
+
+      callError(config, mockEvent);
+      
+      expect(errorFn).toHaveBeenCalledWith(mockEvent);
+      expect(apiFn).not.toHaveBeenCalled();
+    });
+  });
 });

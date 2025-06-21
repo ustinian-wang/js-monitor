@@ -10,19 +10,25 @@
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
     <script type="module">
-      import { setup } from './src/index.ts';
+      import { setup, callWarnHandler } from './src/index.ts';
       window.addEventListener('DOMContentLoaded', (e) => {
         console.log('DOMContentLoaded', e);
-        setup({
+        let config = {
           appId: 'monitor-demo',
           api: 'http://localhost:3000/api/monitor',
           debug: true
-        });
+        } 
+        setup(config);
+
 
         document.addEventListener('click', (e) => {
           let f;
           f();
         });
+
+        setTimeout(() => {
+          callWarnHandler(config, new Error('test'), null, 'test');
+        }, 1000);
       });
     </script>
   </body>

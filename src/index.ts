@@ -86,6 +86,8 @@ export function callWarnHandler(config: setupConfigDef, error: Error, vm: any, i
     report(config, {
         type: ErrTypeEnum.VUE_WARN,
         error,
+        message: error.message,
+        stack: error.stack,
         vmName: vm?.$options?.name,
         info
     })
@@ -103,6 +105,8 @@ export function callErrorHandler(config: setupConfigDef, error: Error, vm: any, 
     report(config, {
         type: ErrTypeEnum.VUE_ERROR,
         error,
+        message: error.message,
+        stack: error.stack,
         vmName: vm?.$options?.name,
         info
     })
@@ -123,9 +127,9 @@ export function callUnhandledrejection(config: setupConfigDef, event: PromiseRej
     report(config, {
         type: ErrTypeEnum.UNHANDLEDREJECTION,
         reason: event.reason,
-        stack: event.reason?.stack,
+        stack: event.reason?.stack || '',
         error: event.reason,
-        message: event.reason?.message,
+        message: event.reason?.message || '',
         resConfig,
     });
 }
