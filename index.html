@@ -16,7 +16,11 @@
         let config = {
           appId: 'monitor-demo',
           api: 'http://localhost:3000/api/monitor',
-          debug: true
+          debug: true,
+          vueConfig: {
+            warnHandler: null,
+            errorHandler: null
+          }
         } 
         setup(config);
 
@@ -27,7 +31,7 @@
         });
 
         setTimeout(() => {
-          callWarnHandler(config, new Error('test'), null, 'test');
+          callWarnHandler(config, new Error('test'), null, 'test INFO');
         }, 1000);
       });
     </script>
