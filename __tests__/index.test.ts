@@ -15,7 +15,7 @@ describe('js-monitor', () => {
   let originalVue: any;
   let originalConsole: any;
   // let originalLog: any; 
-  beforeAll(() => {
+  beforeEach(() => {
     // 备份全局对象
     originalVue = window.Vue;
     originalFetch = window.fetch;
@@ -44,7 +44,7 @@ describe('js-monitor', () => {
 
   });
 
-  afterAll(() => {
+  afterEach(() => {
     // 恢复全局对象
     window.Vue = originalVue;
     window.fetch = originalFetch;
@@ -358,7 +358,7 @@ describe('js-monitor', () => {
 
   describe('callWarnHandler', () => {
 
-    beforeAll(()=>{
+    beforeEach(()=>{
       originalVue = window.Vue;
       window.Vue = {
         config: {
@@ -366,7 +366,7 @@ describe('js-monitor', () => {
         },
       };
     })
-    afterAll(()=>{
+    afterEach(()=>{
       window.Vue = originalVue;
     })
 
@@ -480,4 +480,6 @@ describe('js-monitor', () => {
       expect(apiFn).not.toHaveBeenCalled();
     });
   });
+
+
 });

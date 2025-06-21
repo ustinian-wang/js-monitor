@@ -144,8 +144,8 @@ function getWatch(config: setupConfigDef){
 }
 
 function setup_vue_warnHandler(config: setupConfigDef){
-    let vueConfig = config.vueConfig;
-    if(vueConfig?.warnHandler){
+    let vueConfig = config?.vueConfig;
+    if(vueConfig){
         console_log('vue proxy warn handler start');
         let warnHandler = (error: Error, vm: any, info: string)=>{
             callWarnHandler(config, error, vm, info);
@@ -160,8 +160,8 @@ function setup_vue_warnHandler(config: setupConfigDef){
 
 }
 function setup_vue_errorHandler(config: setupConfigDef){
-    let vueConfig = config.vueConfig;
-    if(vueConfig?.errorHandler){
+    let vueConfig = config?.vueConfig;
+    if(vueConfig){
         console_log('vue proxy error handler start');
         let errorHandler = (error: Error, vm: any, info: string)=>{
             callErrorHandler(config, error, vm, info);
